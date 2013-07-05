@@ -87,7 +87,8 @@ window.sharejs.extendDoc 'attach_ace', (editor, keepEditorContents, errCallback)
   suppressIt = (val) ->
     return if val == undefined
     suppress = !!val
-    return editor.getSession().getUndoManager().suppress(suppress);
+    undoManager = editor && editor.getSession() && editor.getSession().getUndoManager();
+    return undoManager && typeof undoManager.suppress === "function" && undoManager.suppress(suppress);
 
   # Listen for edits in ace
   editorListener = (change) ->

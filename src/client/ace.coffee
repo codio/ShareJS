@@ -78,6 +78,12 @@ window.sharejs.extendDoc 'attach_ace', (editor, keepEditorContents, errCallback)
   # to prevent an infinite typing loop.
   suppress = false
 
+  suppressIt = (val) ->
+    return if val == undefined
+    suppress = !!val
+    undoManager = editor && editor.getSession() && editor.getSession().getUndoManager();
+    return undoManager && typeof undoManager.suppress == "function" && undoManager.suppress(suppress);
+
   # Listen for edits in ace
   editorListener = (change) ->
     return if suppress
@@ -115,9 +121,9 @@ window.sharejs.extendDoc 'attach_ace', (editor, keepEditorContents, errCallback)
 
   # Listen for remote ops on the sharejs document
   docListener = (op) ->
-    suppress = true
+    suppressIt(true)
     applyToDoc editorDoc, op
-    suppress = false
+    suppressIt(false)
 
     check()
 
@@ -137,16 +143,16 @@ window.sharejs.extendDoc 'attach_ace', (editor, keepEditorContents, errCallback)
     row:row, column:offset
 
   doc.on 'insert', insertListener = (pos, text) ->
-    suppress = true
+    suppressIt(true)
     editorDoc.insert offsetToPos(pos), text
-    suppress = false
+    suppressIt(false)
     check()
 
   doc.on 'delete', deleteListener = (pos, text) ->
-    suppress = true
+    suppressIt(true)
     range = Range.fromPoints offsetToPos(pos), offsetToPos(pos + text.length)
     editorDoc.remove range
-    suppress = false
+    suppressIt(false)
     check()
 
   doc.on 'refresh', refreshListener = (startoffset, length) ->

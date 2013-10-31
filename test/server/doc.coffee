@@ -303,3 +303,43 @@ describe 'Doc', ->
     it 'deletes a document', ->
     it 'only sends one op to the server if ops are sent synchronously', ->
     it 'reorders sent (but not acknowledged) operations on reconnect', ->
+
+
+
+  describe.only 'undo', ->
+    describe 'history buffer', ->
+
+      beforeEach ->
+        @doc.create(textType, 'note')
+        @doc.flush()
+        sendMessage connection.sent.pop()
+        @context = @doc.createContext()
+
+      afterEach ->
+        @doc.removeContexts()
+
+      it 'exists', ->
+        expect(@doc).to.have.a.property 'historyBuffer'
+
+      it 'records a simple op', ->
+        expect(@doc.historyBuffer).to.be.empty
+        @context.insert 0, 'hello '
+        @doc.flush()
+        expect(@doc.snapshot).to.be.eql 'hello note'
+        expect(@doc.historyBuffer).to.be.eql [['hello ']]
+
+      it 'records multiple ops', ->
+        expect(@doc.historyBuffer).to.be.empty
+        @context.insert 0, 'hello '
+        @context.remove 6, 4
+        @context.insert 6, 'world'
+        @doc.flush()
+        expect(@doc.snapshot).to.be.eql 'hello world'
+        expect(@doc.historyBuffer).to.be.eql [
+          ['hello ']
+          [6, {d: 4}]
+          [6, 'world']
+        ]
+
+
+

@@ -39,6 +39,11 @@ describe 'UndoManager', ->
       @manager.pushUndo ['world']
       expect(@manager.undoStack).to.be.eql [[' '], ['world']]
 
+    it 'ignores calls when undoing', ->
+      @manager = new UndoManager
+      @manager.state = 'undoing'
+      @manager.pushUndo ['hello']
+      expect(@manager.undoStack).to.be.empty
 
   describe '.undo', ->
     beforeEach ->
@@ -47,14 +52,25 @@ describe 'UndoManager', ->
     it 'exists', ->
       expect(@manager.undo).to.be.a 'function'
 
-    it 'throws if the undo stack is empty', ->
-      expect(=> @manager.undo()).to.throw 'No actions to be undone!'
+    it 'calls the callback with an error if the undo stack is empty', (done) ->
+      @manager.undo (err, res) ->
+        expect(err).to.be.eql new Error('No actions to be undone!')
+        done()
 
-    it 'pops the last operation on the undo stack and returns it', ->
+    it 'pops the last operation on the undo stack and calls the provied callback', (done) ->
       @manager.pushUndo ['hello']
-      expect(@manager.undo()).to.be.eql ['hello']
-      expect(@manager.undoStack).to.be.empty
+      @manager.undo (err, op) =>
+        expect(op).to.be.eql ['hello']
+        expect(@manager.undoStack).to.be.empty
+        done()
 
+    it 'ignores pushUndo while undoing', (done) ->
+      @manager.pushUndo ['hello']
+      @manager.undo (err, op) =>
+        expect(op).to.be.eql ['hello']
+        @manager.pushUndo ['world']
+        expect(@manager.undoStack).to.be.empty
+        done()
 
   describe '.pushRedo', ->
     beforeEach ->
@@ -76,6 +92,11 @@ describe 'UndoManager', ->
       @manager.pushRedo ['world']
       expect(@manager.redoStack).to.be.eql [[' '], ['world']]
 
+    it 'ignores calls when redoing', ->
+      @manager = new UndoManager
+      @manager.state = 'redoing'
+      @manager.pushRedo ['hello']
+      expect(@manager.redoStack).to.be.empty
 
   describe '.redo', ->
     beforeEach ->
@@ -84,14 +105,25 @@ describe 'UndoManager', ->
     it 'exists', ->
       expect(@manager.redo).to.be.a 'function'
 
-    it 'throws if the redo stack is empty', ->
-      expect(=> @manager.redo()).to.throw 'No actions to be redone!'
+    it 'calls the callback with an error if the redo stack is empty', (done) ->
+      @manager.redo (err, res) ->
+        expect(err).to.be.eql new Error('No actions to be redone!')
+        done()
 
-    it 'pops the last operation on the redo stack and returns it', ->
+    it 'pops the last operation on the redo stack and calls the provied callback', (done) ->
       @manager.pushRedo ['hello']
-      expect(@manager.redo()).to.be.eql ['hello']
-      expect(@manager.redoStack).to.be.empty
+      @manager.redo (err, op) =>
+        expect(op).to.be.eql ['hello']
+        expect(@manager.redoStack).to.be.empty
+        done()
 
+    it 'ignores pushRedo while redoing', (done) ->
+      @manager.pushRedo ['hello']
+      @manager.redo (err, op) =>
+        expect(op).to.be.eql ['hello']
+        @manager.pushRedo ['world']
+        expect(@manager.redoStack).to.be.empty
+        done()
 
   describe '.canUndo', ->
     beforeEach ->

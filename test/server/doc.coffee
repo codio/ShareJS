@@ -319,17 +319,49 @@ describe 'Doc', ->
       expect(@doc.undo).to.be.a 'function'
       expect(@context.undo).to.be.a 'function'
 
-    it 'undoes a simple operation', ->
-      @context.insert 0, 'hello'
-      @context.insert 5, ' world'
-      expect(@context.getSnapshot()).to.be.eql 'hello world'
+    describe 'insert op', ->
+      it 'undoes single', ->
+        @context.insert 0, 'hello'
+        @context.insert 5, ' world'
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello'
 
-      @context.undo()
+      it 'undoes multiple', ->
+        @context.insert 0, 'hello'
+        @context.insert 5, ' world'
+        @context.insert 0, '__'
+        expect(@context.getSnapshot()).to.be.eql '__hello world'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql ''
 
-      expect(@context.getSnapshot()).to.be.eql 'hello'
+    describe 'remove op', ->
+      it 'undoes single', ->
+        @context.insert 0, 'hello world'
+        @context.remove 0, 5
+        expect(@context.getSnapshot()).to.be.eql ' world'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
+
+      it 'undoes multiple', ->
+        @context.insert 0, '__hello world'
+        @context.remove 0, 2
+        @context.remove 0, 6
+        @context.remove 0, 2
+        expect(@context.getSnapshot()).to.be.eql 'rld'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'world'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql '__hello world'
 
 
-  describe 'redo', ->
+  describe.only 'redo', ->
     beforeEach ->
       @doc.create(textType, '')
       @doc.flush()
@@ -343,16 +375,54 @@ describe 'Doc', ->
       expect(@doc.redo).to.be.a 'function'
       expect(@context.redo).to.be.a 'function'
 
-    it 'redoes a simple operation', ->
-      @context.insert 0, 'hello'
-      @context.insert 5, ' world'
-      expect(@context.getSnapshot()).to.be.eql 'hello world'
+    describe 'insert op', ->
+      it 'redoes single', ->
+        @context.insert 0, 'hello'
+        @context.insert 5, ' world'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello'
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
 
-      @context.undo()
-      expect(@context.getSnapshot()).to.be.eql 'hello'
+      it 'redoes multiple', ->
+        @context.insert 0, 'hello'
+        @context.insert 5, ' world'
+        @context.insert 0, '__'
+        @context.undo()
+        @context.undo()
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql ''
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql 'hello'
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql '__hello world'
 
-      @context.redo()
-      expect(@context.getSnapshot()).to.be.eql 'hello world'
+    describe 'remove op', ->
+      it 'redoes single', ->
+        @context.insert 0, 'hello world'
+        @context.remove 0, 5
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql ' world'
+
+      it 'redoes multiple', ->
+        @context.insert 0, '__hello world'
+        @context.remove 0, 2
+        @context.remove 0, 6
+        @context.remove 0, 2
+        @context.undo()
+        @context.undo()
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql '__hello world'
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql 'world'
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql 'rld'
 
 
 

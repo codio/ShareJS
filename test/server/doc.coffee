@@ -361,7 +361,7 @@ describe 'Doc', ->
         expect(@context.getSnapshot()).to.be.eql '__hello world'
 
 
-  describe.only 'redo', ->
+  describe 'redo', ->
     beforeEach ->
       @doc.create(textType, '')
       @doc.flush()

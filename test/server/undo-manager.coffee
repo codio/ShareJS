@@ -1,5 +1,6 @@
 expect = require('chai').expect
 UndoManager = require '../../lib/client/undo-manager'
+textType = require('ottypes')['http://sharejs.org/types/textv1']
 
 describe 'UndoManager', ->
 
@@ -152,3 +153,48 @@ describe 'UndoManager', ->
 
     it 'returns false if there are no entries in the redo stack', ->
       expect(@manager.canRedo()).to.be.false
+
+
+  describe '.transform', ->
+    beforeEach ->
+      @manager = new UndoManager
+
+    it 'exists', ->
+      expect(@manager.transform).to.be.a 'function'
+
+    it 'transforms the undo stack by a single operation', ->
+      # The following scenario is tested:
+      #
+      # local: ['hello']
+      # local: [5, ' world']
+      # global: [5, {d: 2}]
+      # local: undo()
+
+      @manager.pushUndo [{d: 4}]                # Delete 'hello'
+      @manager.pushUndo [5, {d: 6}]             # Delete ' world'
+      @manager.transform [ 5, {d: 2}], textType # Delete ' w'
+      expect(@manager.undoStack).to.be.eql [
+        [{d: 4}]     # Delete 'hello'
+        [5, {d: 4}]  # Delete 'orld'
+      ]
+
+    it 'transforms the redo stack by a single operation', (done) ->
+      # The following scenario is tested:
+      #
+      # local: ['hello']
+      # local: [5, ' world']
+      # local: undo()
+      # global: [2, {d: 2}]
+      # local: redo()
+
+      @manager.pushUndo [{d: 4}]                # Delete 'hello'
+      @manager.pushUndo [5, {d: 6}]             # Delete ' world'
+      @manager.undo (err, op) =>
+        @manager.pushRedo [5, ' world']
+        @manager.transform [2, {d: 2}], textType # Delete 'll'
+        expect(@manager.redoStack).to.be.eql [
+          [3, ' world']
+        ]
+        done()
+
+

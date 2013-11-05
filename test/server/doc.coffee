@@ -339,6 +339,18 @@ describe 'Doc', ->
         @context.undo()
         expect(@context.getSnapshot()).to.be.eql ''
 
+      it 'undoes after another global op', ->
+        @context.insert 0, 'hello'
+        @context.insert 5, ' world'
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
+        # Global: [5, {d:2}]
+        # !!Hack
+        @doc._otApply {op: [5, {d: 2}]}, false
+        expect(@context.getSnapshot()).to.be.eql 'helloorld'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello'
+
+
     describe 'remove op', ->
       it 'undoes single', ->
         @context.insert 0, 'hello world'
@@ -425,4 +437,15 @@ describe 'Doc', ->
         expect(@context.getSnapshot()).to.be.eql 'rld'
 
 
+      it 'redoes after another global op', ->
+        @context.insert 0, 'hello'
+        @context.insert 5, ' world'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello'
+        # Global: [5, {d:2}]
+        # !!Hack
+        @doc._otApply {op: [2, {d: 2}]}, false
+        expect(@context.getSnapshot()).to.be.eql 'heo'
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql 'heo world'
 

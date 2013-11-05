@@ -68,6 +68,7 @@ describe 'Connection', ->
   describe 'socket onmessage', ->
     beforeEach ->
       @handleMessage = sinon.stub @connection, 'handleMessage'
+
     it 'calls handle message', ->
       socket.onmessage('a message')
       sinon.assert.calledWith @handleMessage, 'a message'

@@ -66,11 +66,11 @@ describe 'Connection', ->
 
 
   describe 'socket onmessage', ->
-
+    beforeEach ->
+      @handleMessage = sinon.stub @connection, 'handleMessage'
     it 'calls handle message', ->
-      handleMessage = sinon.spy @connection, 'handleMessage'
       socket.onmessage('a message')
-      sinon.assert.calledWith handleMessage, 'a message'
+      sinon.assert.calledWith @handleMessage, 'a message'
 
     it 'pushes message buffer', ->
       assert @connection.messageBuffer.length == 0

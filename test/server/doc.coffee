@@ -387,6 +387,14 @@ describe 'Doc', ->
       expect(@doc.redo).to.be.a 'function'
       expect(@context.redo).to.be.a 'function'
 
+    it 'correctly updates the undo stack', ->
+      @context.insert 0, 'hello'
+      @context.insert 5, ' world'
+      @context.undo()
+      @context.redo()
+      expect(@doc.undoManager.undoStack).to.be.eql [[{d: 5}], [5, {d: 6}]]
+      expect(@doc.undoManager.redoStack).to.be.empty
+
     describe 'insert op', ->
       it 'redoes single', ->
         @context.insert 0, 'hello'

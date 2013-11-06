@@ -31,6 +31,10 @@ describe 'UndoManager', ->
       @manager.pushUndo ['hello']
       expect(@manager.undoStack).to.be.eql [['hello']]
 
+    it 'should ignore empty operations', ->
+      @manager.pushUndo []
+      expect(@manager.undoStack).to.be.empty
+
     it 'deletes the first entry if the history limit is reached', ->
       @manager = new UndoManager 2
       @manager.pushUndo ['hello']
@@ -41,10 +45,14 @@ describe 'UndoManager', ->
       expect(@manager.undoStack).to.be.eql [[' '], ['world']]
 
     it 'ignores calls when undoing', ->
-      @manager = new UndoManager
       @manager.state = 'undoing'
       @manager.pushUndo ['hello']
       expect(@manager.undoStack).to.be.empty
+
+    it 'empty the redoStack in the default state', ->
+      @manager.redoStack = [1,2,3]
+      @manager.pushUndo ['hello']
+      expect(@manager.redoStack).to.be.empty
 
   describe '.undo', ->
     beforeEach ->
@@ -80,12 +88,19 @@ describe 'UndoManager', ->
     it 'exists', ->
       expect(@manager.pushRedo).to.be.a 'function'
 
-    it 'adds the operation to the redo stack', ->
+    it 'adds the operation to the redo stack when undoing', ->
+      @manager.state = 'undoing'
       @manager.pushRedo ['hello']
       expect(@manager.redoStack).to.be.eql [['hello']]
 
+    it 'should ignore empty operations', ->
+      @manager.state = 'undoing'
+      @manager.pushRedo []
+      expect(@manager.redoStack).to.be.empty
+
     it 'deletes the first entry if the history limit is reached', ->
       @manager = new UndoManager 2
+      @manager.state = 'undoing'
       @manager.pushRedo ['hello']
       @manager.pushRedo [' ']
       expect(@manager.redoStack).to.be.eql [['hello'], [' ']]
@@ -93,11 +108,16 @@ describe 'UndoManager', ->
       @manager.pushRedo ['world']
       expect(@manager.redoStack).to.be.eql [[' '], ['world']]
 
-    it 'ignores calls when redoing', ->
+    it 'ignores calls when not undoing', ->
       @manager = new UndoManager
       @manager.state = 'redoing'
       @manager.pushRedo ['hello']
       expect(@manager.redoStack).to.be.empty
+
+      @manager.state = 'default'
+      @manager.pushRedo ['hello']
+      expect(@manager.redoStack).to.be.empty
+
 
   describe '.redo', ->
     beforeEach ->
@@ -112,14 +132,18 @@ describe 'UndoManager', ->
         done()
 
     it 'pops the last operation on the redo stack and calls the provied callback', (done) ->
+      @manager.state = 'undoing'
       @manager.pushRedo ['hello']
+      @manager.state = 'default'
       @manager.redo (err, op) =>
         expect(op).to.be.eql ['hello']
         expect(@manager.redoStack).to.be.empty
         done()
 
     it 'ignores pushRedo while redoing', (done) ->
+      @manager.state = 'undoing'
       @manager.pushRedo ['hello']
+      @manager.state = 'default'
       @manager.redo (err, op) =>
         expect(op).to.be.eql ['hello']
         @manager.pushRedo ['world']
@@ -148,7 +172,9 @@ describe 'UndoManager', ->
       expect(@manager.canRedo).to.be.a 'function'
 
     it 'returns true if there are entries in the redo stack', ->
+      @manager.state = 'undoing'
       @manager.pushRedo ['hello']
+      @manager.state = 'default'
       expect(@manager.canRedo()).to.be.true
 
     it 'returns false if there are no entries in the redo stack', ->

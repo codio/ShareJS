@@ -303,3 +303,157 @@ describe 'Doc', ->
     it 'deletes a document', ->
     it 'only sends one op to the server if ops are sent synchronously', ->
     it 'reorders sent (but not acknowledged) operations on reconnect', ->
+
+
+  describe 'undo', ->
+    beforeEach ->
+      @doc.create(textType, '')
+      @doc.flush()
+      sendMessage connection.sent.pop()
+      @context = @doc.createContext()
+
+    afterEach ->
+      @doc.removeContexts()
+
+    it 'exists', ->
+      expect(@doc.undo).to.be.a 'function'
+      expect(@context.undo).to.be.a 'function'
+
+    describe 'insert op', ->
+      it 'undoes single', ->
+        @context.insert 0, 'hello'
+        @context.insert 5, ' world'
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello'
+
+      it 'undoes multiple', ->
+        @context.insert 0, 'hello'
+        @context.insert 5, ' world'
+        @context.insert 0, '__'
+        expect(@context.getSnapshot()).to.be.eql '__hello world'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql ''
+
+      it 'undoes after another global op', ->
+        @context.insert 0, 'hello'
+        @context.insert 5, ' world'
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
+        # Global: [5, {d:2}]
+        # !!Hack
+        @doc._otApply {op: [5, {d: 2}]}, false
+        expect(@context.getSnapshot()).to.be.eql 'helloorld'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello'
+
+
+    describe 'remove op', ->
+      it 'undoes single', ->
+        @context.insert 0, 'hello world'
+        @context.remove 0, 5
+        expect(@context.getSnapshot()).to.be.eql ' world'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
+
+      it 'undoes multiple', ->
+        @context.insert 0, '__hello world'
+        @context.remove 0, 2
+        @context.remove 0, 6
+        @context.remove 0, 2
+        expect(@context.getSnapshot()).to.be.eql 'rld'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'world'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql '__hello world'
+
+
+  describe 'redo', ->
+    beforeEach ->
+      @doc.create(textType, '')
+      @doc.flush()
+      sendMessage connection.sent.pop()
+      @context = @doc.createContext()
+
+    afterEach ->
+      @doc.removeContexts()
+
+    it 'exists', ->
+      expect(@doc.redo).to.be.a 'function'
+      expect(@context.redo).to.be.a 'function'
+
+    it 'correctly updates the undo stack', ->
+      @context.insert 0, 'hello'
+      @context.insert 5, ' world'
+      @context.undo()
+      @context.redo()
+      expect(@doc.undoManager.undoStack).to.be.eql [[{d: 5}], [5, {d: 6}]]
+      expect(@doc.undoManager.redoStack).to.be.empty
+
+    describe 'insert op', ->
+      it 'redoes single', ->
+        @context.insert 0, 'hello'
+        @context.insert 5, ' world'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello'
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
+
+      it 'redoes multiple', ->
+        @context.insert 0, 'hello'
+        @context.insert 5, ' world'
+        @context.insert 0, '__'
+        @context.undo()
+        @context.undo()
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql ''
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql 'hello'
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql '__hello world'
+
+    describe 'remove op', ->
+      it 'redoes single', ->
+        @context.insert 0, 'hello world'
+        @context.remove 0, 5
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql ' world'
+
+      it 'redoes multiple', ->
+        @context.insert 0, '__hello world'
+        @context.remove 0, 2
+        @context.remove 0, 6
+        @context.remove 0, 2
+        @context.undo()
+        @context.undo()
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql '__hello world'
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql 'hello world'
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql 'world'
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql 'rld'
+
+
+      it 'redoes after another global op', ->
+        @context.insert 0, 'hello'
+        @context.insert 5, ' world'
+        @context.undo()
+        expect(@context.getSnapshot()).to.be.eql 'hello'
+        # Global: [5, {d:2}]
+        # !!Hack
+        @doc._otApply {op: [2, {d: 2}]}, false
+        expect(@context.getSnapshot()).to.be.eql 'heo'
+        @context.redo()
+        expect(@context.getSnapshot()).to.be.eql 'heo world'
+

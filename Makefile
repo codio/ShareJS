@@ -12,13 +12,13 @@ CLIENT = \
 	textarea.js \
 	query.js
 
-# not included:	index.coffee 
+# not included:	index.coffee
 
 BUNDLED_TYPES = \
 	webclient/text.js \
 	lib/types/text-api.js \
 	webclient/json0.js \
-	lib/types/json-api.js 
+	lib/types/json-api.js
 
 # Disabled: lib/types/json-api.coffee
 
@@ -48,4 +48,3 @@ webclient/%.js: webclient/%.uncompressed.js
 
 # Compile the types for a browser.
 webclient: webclient/share.js webclient/text.js webclient/json0.js
-

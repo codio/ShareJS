@@ -22,11 +22,13 @@
     "async": "~0.2"
   },
   "devDependencies": {
-    "coffee-script": "~1.6.3",
-    "optimist": ">= 0.2.4",
     "browserchannel": "*",
+    "coffee-script": "~1.6.3",
+    "json-loader": "^0.5.1",
     "mocha": "~1",
-    "uglify-js": "~2"
+    "optimist": ">= 0.2.4",
+    "uglify-js": "~2",
+    "webpack": "^1.8.1"
   },
   "optionalDependencies": {
     "express": "~3"

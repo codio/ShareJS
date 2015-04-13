@@ -16,7 +16,7 @@
     "email": "josephg@gmail.com"
   },
   "dependencies": {
-    "livedb": "^0.5.0",
+    "livedb": "git://github.com/codio/livedb#5444-upgrade",
     "ottypes": "~1",
     "hat": "*",
     "async": "~0.2"

@@ -1,17 +1,13 @@
 .PHONY: all test clean webclient
 
-UGLIFY = node_modules/.bin/uglifyjs -d WEB=true
-BROWSERIFY = node_modules/.bin/browserify
+WEBPACK = node_modules/.bin/webpack
 
-all: build buildMin
+all: webclient
 
-build:
-	mkdir -p dist
-	$(BROWSERIFY) -s sharejs lib/client/index.js -o dist/share.js
-
-buildMin: build minify
-
-minify:
-	$(UGLIFY) -cm --lint dist/share.js > dist/share.min.js
 clean:
-	rm -rf dist/*
+	rm -rf webclient/*
+
+# Compile the types for a browser.
+webclient:
+	webpack -d --output-file share.js
+	webpack -p --output-file share.min.js

@@ -19,7 +19,7 @@
     "livedb": "codio/livedb#node_431",
     "ottypes": "~1",
     "hat": "0.0.3",
-    "async": "1.5.2"
+    "async": "~0.2"
   },
   "devDependencies": {
     "browserchannel": "*",

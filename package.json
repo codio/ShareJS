@@ -16,10 +16,10 @@
     "email": "josephg@gmail.com"
   },
   "dependencies": {
-    "livedb": "codio/livedb",
+    "livedb": "codio/livedb#node_431",
     "ottypes": "~1",
-    "hat": "*",
-    "async": "~0.2"
+    "hat": "0.0.3",
+    "async": "1.5.2"
   },
   "devDependencies": {
     "browserchannel": "*",
